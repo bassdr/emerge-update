@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Exit if emerge is running right now, will be back tomorrow
+if [ "$(ps -o comm= -C emerge | wc -l)" -gt "0" ] ; then
+  echo ==== Emerge was already running, will be back tomorrow ====
+  exit 0
+fi
+
+# Synchronise the portage tree
+mkdir -p /var/log/emerge-update
+echo >> /var/log/emerge-update/sync.log
+echo $(date): Start synchronizing the portage tree >> /var/log/emerge-update/sync.log
+
+gawk -F: '{print strftime("%x %X %Z", $1),$2}' /var/log/emerge.log | xz > /var/log/emerge_$(date +%Y%m%d).log.xz
+rm -f /var/log/emerge.log
+
+echo ==== Synchronizing the portage tree ====
+emaint sync --auto >> /var/log/emerge-update/sync.log
+echo $(date): Synchronized the portage tree >> /var/log/emerge-update/sync.log
+
+# Lower priority of current process, so the computer stays responsible for other tasks
+renice -n 15 $$
+ionice -c2 -n6 -p $$
+
+emaint moveinst --fix
+emerge "$@" -vu sys-apps/portage
+
+echo ==== Emerge world ====
+emerge "$@" -vuDN --backtrack=90 --rebuilt-binaries --keep-going @world
+
+echo ==== Re-emerge preserved-libs ====
+emerge "$@" -v --keep-going @preserved-rebuild
+
+echo ==== Emerge depclean ====
+emerge "$@" --depclean
+
+echo ==== Reverse Dependency Rebuilder ====
+FEATURES="-getbinpkg" revdep-rebuild -- --usepkg=n --usepkgonly=n --getbinpkg=n --getbinpkgonly=n
+
+echo ==== Perl cleaner ====
+perl-cleaner --all 2>&1 | grep -v 'No such file'
+
+echo ==== Re-emerge preserved-libs, and force rebuild  ====
+FEATURES="-getbinpkg" emerge "$@" -v --keep-going --usepkg=n --usepkgonly=n --getbinpkg=n --getbinpkgonly=n @preserved-rebuild
+
+echo ==== Clean the distfiles ====
+eclean -C -d -t3w distfiles
+
+echo ==== Clean the binhost ====
+emaint binhost --fix
+eclean -C packages
+
+# Checks if a new kernel was emerged, and build it
+if [ ! -f /usr/src/linux/.config ] ; then
+  echo ==== Building new kernel using config from current running kernel ====
+  genkernel --no-menuconfig --kernel-config=/proc/config.gz all
+fi
+
+echo ==== Clean-up kernel sources and outdated kernel ====
+eclean-kernel --num=2
+
