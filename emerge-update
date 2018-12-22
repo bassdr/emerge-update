@@ -6,7 +6,7 @@ if [ "$(ps -o comm= -C emerge | wc -l)" -gt "0" ] ; then
   exit 0
 fi
 
-# Synchronise the portage tree
+# Create synchronise log folder
 mkdir -p /var/log/emerge-update
 echo >> /var/log/emerge-update/sync.log
 echo $(date): Start synchronizing the portage tree >> /var/log/emerge-update/sync.log
@@ -28,11 +28,11 @@ emerge "$@" -vu sys-apps/portage
 echo ==== Emerge world ====
 emerge "$@" -vuDN --backtrack=90 --rebuilt-binaries --keep-going @world
 
-echo ==== Re-emerge preserved-libs ====
-emerge "$@" -v --keep-going @preserved-rebuild
-
 echo ==== Emerge depclean ====
 emerge "$@" --depclean
+
+echo ==== Re-emerge preserved-libs ====
+emerge "$@" -v --keep-going @preserved-rebuild
 
 echo ==== Reverse Dependency Rebuilder ====
 FEATURES="-getbinpkg" revdep-rebuild -- --usepkg=n --usepkgonly=n --getbinpkg=n --getbinpkgonly=n
