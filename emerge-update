@@ -53,7 +53,13 @@ eclean -C packages
 # Checks if a new kernel was emerged, and build it
 if [ ! -f /usr/src/linux/.config ] ; then
   echo ==== Building new kernel using config from current running kernel ====
-  genkernel --no-menuconfig --kernel-config=/proc/config.gz all
+
+  #nconfig         - Update current config utilising a ncurses menu based program
+  #menuconfig      - Update current config utilising a menu based program
+  #xconfig         - Update current config utilising a Qt based front-end
+  #gconfig         - Update current config utilising a GTK+ based fron
+
+  genkernel --no-nconfig --no-menuconfig --no-xconfig --no-gconfig --kernel-config=/proc/config.gz all
 fi
 
 echo ==== Clean-up kernel sources and outdated kernel ====
