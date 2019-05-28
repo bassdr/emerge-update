@@ -63,5 +63,5 @@ if [ ! -f /usr/src/linux/.config ] ; then
 fi
 
 echo ==== Clean-up kernel sources and outdated kernel ====
-eclean-kernel --num=2
+eclean-kernel -n 2
 
