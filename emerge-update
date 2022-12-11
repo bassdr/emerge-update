@@ -59,7 +59,8 @@ if [ ! -f /usr/src/linux/.config ] ; then
   #xconfig         - Update current config utilising a Qt based front-end
   #gconfig         - Update current config utilising a GTK+ based fron
 
-  genkernel --no-nconfig --no-menuconfig --no-xconfig --no-gconfig --kernel-config=/proc/config.gz all
+  cat /etc/kernel-config/* > /usr/src/linux/.config-emerge-update
+  genkernel --no-nconfig --no-menuconfig --no-xconfig --no-gconfig --kernel-config=/usr/src/linux/.config-emerge-update all
 fi
 
 echo ==== Clean-up kernel sources and outdated kernel ====
